@@ -1,0 +1,164 @@
+<div class="collaborative-canvas-container">
+  <div *ngIf="!isJoined" class="join-panel">
+    <div class="join-form">
+      <h2>Pizarra Colaborativa Etronic</h2>
+      <p class="subtitle">
+        Dibuja y colabora en tiempo real con otros usuarios
+      </p>
+
+      <div class="form-group">
+        <label for="username">Nombre de Usuario:</label>
+        <input
+          #usernameInput
+          type="text"
+          id="username"
+          [(ngModel)]="username"
+          placeholder="Ingresa tu nombre"
+          (keyup.enter)="joinSession()"
+          [disabled]="isConnected === false"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="roomCode">Código de Sala:</label>
+        <input
+          type="text"
+          id="roomCode"
+          [(ngModel)]="roomCode"
+          placeholder="ROOM123"
+        />
+      </div>
+
+      <div *ngIf="joinError" class="error-message">{{ joinError }}</div>
+
+      <div class="button-group">
+        <button
+          *ngIf="!isConnected"
+          (click)="connectToServer()"
+          class="btn btn-primary"
+        >
+          <span class="icon">🔌</span> Conectar
+        </button>
+        <button
+          *ngIf="isConnected"
+          (click)="joinSession()"
+          class="btn btn-success"
+          [disabled]="!username.trim()"
+        >
+          <span class="icon">✅</span> Unirse
+        </button>
+      </div>
+
+      <div class="connection-status">
+        <span class="status-indicator" [class.connected]="isConnected"></span>
+        {{
+          isConnected
+            ? "Conectado al servidor"
+            : "Desconectado del servidor"
+        }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isJoined" class="canvas-workspace">
+    <!-- Header -->
+    <div class="header">
+      <div class="user-info">
+        <div class="user-badge" [style.background-color]="currentUser?.color">
+          {{ (currentUser?.username || '?').charAt(0).toUpperCase() }}
+        </div>
+        <span class="username">{{ currentUser?.username }}</span>
+      </div>
+
+      <div class="active-users">
+        <span class="users-label">{{ users.length }} usuario(s) activo(s)</span>
+        <div class="users-list">
+          <div *ngFor="let user of users" class="user-item">
+            <div
+              class="user-dot"
+              [style.background-color]="user.color"
+              [title]="user.username"
+            ></div>
+            <span>{{ user.username }}</span>
+          </div>
+        </div>
+      </div>
+
+      <button (click)="disconnect()" class="btn btn-danger btn-small">
+        Salir
+      </button>
+    </div>
+
+    <div class="main-content">
+      <!-- Canvas -->
+      <div class="canvas-section">
+        <div class="canvas-header">
+          <h3>Pizarra Colaborativa</h3>
+          <button
+            (click)="clearCanvas()"
+            class="btn btn-warning btn-small"
+            title="Limpiar pizarra"
+          >
+            🗑️ Limpiar
+          </button>
+        </div>
+
+        <canvas
+          #canvas
+          class="drawing-canvas"
+          (mousedown)="onMouseDown($event)"
+          (mousemove)="onMouseMove($event)"
+          (mouseup)="onMouseUp()"
+          (mouseleave)="onMouseUp()"
+        ></canvas>
+
+        <div class="canvas-info">
+          <p>
+            <strong>Acciones:</strong> {{ drawingActions.length }} | 
+            <strong>Conexión:</strong> {{ isConnected ? "✅ Activa" : "❌ Inactiva" }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat-section">
+        <div class="chat-header">
+          <h3>Chat en Vivo</h3>
+          <span class="message-count">{{ chatMessages.length }} mensajes</span>
+        </div>
+
+        <div class="messages-container">
+          <div *ngFor="let msg of chatMessages" class="message">
+            <div class="message-header">
+              <span
+                class="user-name"
+                [style.color]="msg.userColor"
+              >
+                {{ msg.username }}
+              </span>
+              <span class="timestamp">{{ getFormattedTime(msg.timestamp) }}</span>
+            </div>
+            <div class="message-text">{{ msg.message }}</div>
+          </div>
+        </div>
+
+        <div class="message-input-group">
+          <input
+            type="text"
+            [(ngModel)]="newMessage"
+            placeholder="Escribe un mensaje..."
+            (keyup.enter)="sendMessage()"
+            class="message-input"
+          />
+          <button
+            (click)="sendMessage()"
+            [disabled]="!newMessage.trim()"
+            class="btn btn-primary"
+          >
+            Enviar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

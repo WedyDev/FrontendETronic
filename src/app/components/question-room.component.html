@@ -1,0 +1,219 @@
+<div class="question-room-container">
+  <!-- Login Screen -->
+  <div *ngIf="!isJoined" class="login-screen">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>🎯 Question Room</h1>
+        <p class="tagline">Colabora y responde preguntas en tiempo real</p>
+      </div>
+
+      <div class="login-form">
+        <div class="form-group">
+          <label>Tu Nombre</label>
+          <input
+            [(ngModel)]="username"
+            placeholder="¿Cuál es tu nombre?"
+            (keyup.enter)="joinRoom()"
+            type="text"
+            class="input-field"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Código de Sala (opcional)</label>
+          <input
+            [(ngModel)]="roomCode"
+            placeholder="Ej: ROOM123"
+            type="text"
+            class="input-field"
+          />
+        </div>
+
+        <button (click)="joinRoom()" class="btn btn-primary btn-large">
+          Entrar a la Sala
+        </button>
+
+        <div class="connection-status" [class.connected]="isConnected">
+          <span class="dot"></span>
+          {{ isConnected ? 'Conectado al servidor' : 'Conectando...' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Screen -->
+  <div *ngIf="isJoined" class="room-screen">
+    <!-- Header -->
+    <header class="room-header">
+      <div class="header-left">
+        <h1>🎯 Question Room</h1>
+        <span class="room-code" *ngIf="roomCode">{{ roomCode }}</span>
+      </div>
+
+      <div class="header-center">
+        <div class="active-users-badge">
+          👥 {{ users.length }} en la sala
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="user-badge">
+          <span class="initial">{{ (currentUser?.username || '?').charAt(0).toUpperCase() }}</span>
+          <span class="name">{{ currentUser?.username }}</span>
+        </div>
+        <button (click)="leaveRoom()" class="btn btn-secondary btn-small">
+          Salir
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="room-content">
+      <!-- Left Sidebar - Users List -->
+      <aside class="users-sidebar">
+        <div class="sidebar-title">Personas en la Sala</div>
+        <div class="users-list">
+          <div *ngFor="let user of users" class="user-item" [class.current]="user.id === currentUser?.id">
+            <div class="user-avatar" [style.backgroundColor]="user.color">
+              {{ user.username.charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-info">
+              <div class="user-name">{{ user.username }}</div>
+              <div class="user-status">{{ getStatusText(user) }}</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center - Questions Feed -->
+      <main class="questions-feed">
+        <!-- Question Input -->
+        <div class="question-input-box">
+          <div class="input-header">
+            <h3>¿Cuál es tu pregunta?</h3>
+          </div>
+          <textarea
+            [(ngModel)]="newQuestion"
+            placeholder="Escribe tu pregunta aquí..."
+            class="question-textarea"
+            (keyup.ctrl.enter)="submitQuestion()"
+          ></textarea>
+          <div class="input-footer">
+            <button (click)="submitQuestion()" class="btn btn-primary" [disabled]="!newQuestion.trim()">
+              Enviar Pregunta
+            </button>
+          </div>
+        </div>
+
+        <!-- Questions List -->
+        <div class="questions-list">
+          <div *ngFor="let question of questions" class="question-card">
+            <div class="question-header">
+              <div class="question-author anonymous">
+                <div class="author-avatar anonymous-avatar" [style.backgroundColor]="question.displayColor">
+                  ?
+                </div>
+                <div class="author-info">
+                  <div class="author-name">Pregunta anónima</div>
+                  <div class="question-time">{{ getFormattedTime(question.timestamp) }}</div>
+                </div>
+              </div>
+              <div class="question-status">
+                <span *ngIf="question.isAnswered" class="status-badge answered">✅ Respondida</span>
+                <span *ngIf="!question.isAnswered" class="status-badge pending">⏳ Pendiente</span>
+              </div>
+            </div>
+
+            <div class="question-body">
+              {{ question.text }}
+            </div>
+
+            <div class="question-footer">
+              <div class="answer-count">
+                💬 {{ question.answers.length }} respuesta(s)
+              </div>
+              <div class="question-actions">
+                <button (click)="voteSkip(question.id)" class="btn btn-small btn-secondary">
+                  Omitir {{ getSkipLabel(question) }}
+                </button>
+                <button (click)="toggleAnswerForm(question.id)" class="btn btn-small btn-primary">
+                  {{ isAnswerFormOpen(question.id) ? 'Cancelar' : 'Responder' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Answer Form -->
+            <div *ngIf="isAnswerFormOpen(question.id)" class="answer-form">
+              <textarea
+                #answerInput
+                [(ngModel)]="answerTexts[question.id]"
+                placeholder="Escribe tu respuesta..."
+                class="answer-textarea"
+              ></textarea>
+              <div class="answer-actions">
+                <button (click)="submitAnswer(question.id)" class="btn btn-primary">
+                  Enviar Respuesta
+                </button>
+                <button (click)="toggleAnswerForm(question.id)" class="btn btn-secondary">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+            <!-- Answers List -->
+            <div *ngIf="question.answers.length > 0" class="answers-list">
+              <div *ngFor="let answer of question.answers" class="answer-item">
+                <div class="answer-author">
+                  <div class="author-avatar small" [style.backgroundColor]="answer.displayColor">
+                    ?
+                  </div>
+                  <div class="author-info">
+                    <div class="author-name">Respuesta anónima</div>
+                    <div class="answer-time">{{ getFormattedTime(answer.timestamp) }}</div>
+                  </div>
+                </div>
+                <div class="answer-text">{{ answer.text }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="questions.length === 0" class="empty-state">
+            <div class="empty-icon">❓</div>
+            <p>Aún no hay preguntas. ¡Sé el primero en hacer una!</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Sidebar - Stats -->
+      <aside class="stats-sidebar">
+        <div class="sidebar-title">Estadísticas</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number">{{ questions.length }}</div>
+            <div class="stat-label">Preguntas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ getTotalAnswers() }}</div>
+            <div class="stat-label">Respuestas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ getAnsweredCount() }}</div>
+            <div class="stat-label">Respondidas</div>
+          </div>
+        </div>
+
+        <div class="activity-section">
+          <div class="sidebar-title">Actividad Reciente</div>
+          <div class="activity-list">
+            <div *ngFor="let activity of getRecentActivity() | slice:0:5" class="activity-item">
+              <span class="activity-icon">{{ activity.icon }}</span>
+              <span class="activity-text">{{ activity.text }}</span>
+              <span class="activity-time">{{ activity.time }}</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
