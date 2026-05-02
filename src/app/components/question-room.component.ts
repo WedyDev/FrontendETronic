@@ -119,7 +119,7 @@ export class QuestionRoomComponent implements OnInit, OnDestroy {
   }
 
   private setupConnection(): void {
-    this.collaborationService.connect('http://localhost:3000')
+    this.collaborationService.connect('https://backendetronic.onrender.com')
       .then(() => {
         this.isConnected = true;
         this.setupSubscriptions();
