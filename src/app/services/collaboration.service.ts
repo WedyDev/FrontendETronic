@@ -81,7 +81,7 @@ export class CollaborationService {
     this.questions.next([]);
   }
 
-  connect(serverUrl: string = 'http://localhost:3000'): Promise<void> {
+  connect(serverUrl: string = 'https://backendetronic.onrender.com'): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.socket?.connected) {
         console.log('[CONEXIÓN] Ya conectado al servidor');
