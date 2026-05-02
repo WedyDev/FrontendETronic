@@ -109,7 +109,7 @@ export class CollaborativeCanvasComponent implements OnInit, AfterViewInit, OnDe
 
   async connectToServer(): Promise<void> {
     try {
-      await this.collaborationService.connect('http://localhost:3000');
+      await this.collaborationService.connect('https://backendetronic.onrender.com');
     } catch (error) {
       console.error('Error conectando:', error);
       this.joinError = 'Error conectando al servidor';
